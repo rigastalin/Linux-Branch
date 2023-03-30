@@ -1,0 +1,66 @@
+stages:
+  - build
+  - style
+  - test
+  - ci_notify
+  - deploy
+
+build: 
+  stage: build
+  script:
+    - make -C src/cat
+    - make -C src/grep
+  # after_script:
+  #   - ./corrinflossie_bot.sh
+  artifacts:
+    paths:
+      - src/cat/s21_cat
+      - src/grep/s21_grep
+    expire_in: 30 days
+  tags:
+    - "cflossie"
+
+style:
+  stage: style
+  script:
+    - python3 ./materials/linters/cpplint.py --extensions=c src/*/*.c
+    - python3 ./materials/linters/cpplint.py --extensions=c src/*/*.h
+  # after_script:
+  #   - ./corrinflossie_bot.sh
+  tags:
+    - "cflossie"
+
+test:
+  stage: test
+  needs: ["build", "style"]
+  script:
+    - make test -C src/cat/
+    - make test -C src/grep/
+  after_script:
+    - echo $CI_JOB_STATUS > job_status.txt
+  artifacts:
+    paths:
+      - job_status.txt
+  tags:
+    - "cflossie"
+
+ci_notyfi:
+  stage: ci_notify
+  when: always
+  script:
+    - chmod +x ./corrinflossie_bot.sh
+    - ./corrinflossie_bot.sh
+  tags:
+    - "cflossie"
+
+deploy:
+  stage: deploy
+  needs: ["build", "style", "test"]
+  script:
+    - chmod +x part5.sh
+    - ./part5.sh
+  after_script:
+    - ./corrinflossie_bot.sh
+  when: manual
+  tags:
+    - "cflossie"
