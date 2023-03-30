@@ -1,0 +1,44 @@
+FROM nginx
+
+COPY ./server/s21_server.c /s21_server/
+COPY ./server/part4.sh /s21_server/
+COPY ./server/nginx/nginx.conf /etc/nginx/nginx.conf
+
+# установленные атрибуты SUID или SGID позволяют запускать файл 
+# на выполнение с правами владельца файла или группы соответственно "chmod u-s"
+RUN apt-get update ; \
+    apt-get install -y gcc  \
+    make \
+    spawn-fcgi \
+    libfcgi-dev ; \
+    /etc/init.d/nginx start ; \
+    useradd -d /home/cflossie -m -s /bin/bash cflossie ; \
+    chown -R cflossie:cflossie /s21_server && chmod -R 755 /s21_server ; \
+    chown -R cflossie:cflossie /var/cache/cflossie ; \
+    chown -R cflossie:cflossie /var/log/cflossie ; \
+    chown -R cflossie:cflossie /etc/nginx/conf.d ; \
+    touch /var/run/nginx.pid ; \
+    chown -R cflossie:cflossie /var/run/nginx.pid ; \ 
+    chmod u-s usr/bin/gpasswd ; \
+    chmod u-s bin/mount ; \
+    chmod u-s bin/su ; \
+    chmod g-s usr/bin/chage ; \
+    chmod u-s usr/bin/chsh ; \
+    chmod u-s usr/bin/newgrp ; \
+    chmod u-s usr/bin/passwd ; \
+    chmod g-s usr/bin/wall ; \
+    chmod u-s usr/bin/chfn ; \
+    chmod g-s sbin/unix_chkpwd ; \
+    chmod u-s bin/umount ; \
+    chmod g-s usr/bin/expiry ; \
+    rm -rf /var/lib/apt/lists
+    
+USER cflossie
+
+WORKDIR /s21_server/
+
+ENTRYPOINT [ "./part4.sh" ]
+
+HEALTHCHECK --interval=5s --timeout=10s --retries=3 CMD curl --silent --fail localhost:81/
+# Healthcheck - проверка состояния контейнера. Раз в 5 секунд отправляем запрос, даем 10 секунд и делаем
+# 3 попытки. Если после третьей попытки идет лажа, значит что-то не так

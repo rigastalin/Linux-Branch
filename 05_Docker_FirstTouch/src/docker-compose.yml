@@ -1,0 +1,26 @@
+version: "3"
+
+services: 
+  s21_server:
+    build:
+      context: .
+      dockerfile: Dockerfile2
+    container_name: s21_server
+    tty: true
+    networks:
+      - main
+
+  cflossie_v1:
+    build:
+      context: ./cflossie
+      dockerfile: Dockerfile3
+    ports:
+      - "80:8080"
+    tty: true
+    depends_on:
+      - s21_server
+    networks:
+      - main   
+
+networks:
+  main:
